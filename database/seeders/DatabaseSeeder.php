@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
             'password' => bcrypt('password123'),
         ]);
 
-        Role::create(['name' => 'buyer']);
+        Role::firstOrCreate(['name' => 'buyer']);
         Role::create(['name' => 'staff']);
 
         $staffRole = Role::where('name', 'staff')->first();

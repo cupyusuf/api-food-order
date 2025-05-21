@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Role;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -18,10 +20,17 @@ class AuthController extends Controller
             'password' => 'required|string|min:8',
         ]);
 
+        $role = Role::where('name', 'buyer')->first();
+        Log::info('Role query result:', ['role' => $role]);
+        if (!$role) {
+            return response()->json(['error' => 'Default role not found in the database'], 500);
+        }
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'role_id' => $role->id,
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
