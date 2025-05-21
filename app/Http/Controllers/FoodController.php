@@ -6,9 +6,26 @@ use App\Models\Food;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Auth;
 
 class FoodController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:sanctum')->except(['index', 'show']);
+        $this->middleware(function ($request, $next) {
+            $user = Auth::user();
+            if (!$user || !$user->role || $user->role->name !== 'staff') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Access denied. Only staff can perform this action.',
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            return $next($request);
+        })->only(['store', 'update', 'destroy']);
+    }
+
     /**
      * Display a listing of the resource.
      */

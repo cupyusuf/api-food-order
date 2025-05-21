@@ -37,7 +37,8 @@ class FoodApiTest extends TestCase
     /** @test */
     public function it_can_create_food_with_authentication()
     {
-        $user = User::factory()->create();
+        $role = \App\Models\Role::firstOrCreate(['name' => 'staff']);
+        $user = User::factory()->create(['role_id' => $role->id]); // Mengaitkan pengguna dengan peran 'staff'
         $token = $user->createToken('auth_token')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -62,7 +63,8 @@ class FoodApiTest extends TestCase
     /** @test */
     public function it_can_update_food_with_authentication()
     {
-        $user = User::factory()->create();
+        $role = \App\Models\Role::firstOrCreate(['name' => 'staff']);
+        $user = User::factory()->create(['role_id' => $role->id]);
         $token = $user->createToken('auth_token')->plainTextToken;
 
         $food = Food::factory()->create();
@@ -84,7 +86,8 @@ class FoodApiTest extends TestCase
     /** @test */
     public function it_can_delete_food_with_authentication()
     {
-        $user = User::factory()->create();
+        $role = \App\Models\Role::firstOrCreate(['name' => 'staff']);
+        $user = User::factory()->create(['role_id' => $role->id]);
         $token = $user->createToken('auth_token')->plainTextToken;
 
         $food = Food::factory()->create();

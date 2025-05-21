@@ -17,7 +17,8 @@ class FoodApiTest extends TestCase
     {
         parent::setUp();
 
-        $this->user = \App\Models\User::factory()->create();
+        $role = \App\Models\Role::firstOrCreate(['name' => 'staff']);
+        $this->user = \App\Models\User::factory()->create(['role_id' => $role->id]);
         $this->token = $this->user->createToken('auth_token')->plainTextToken;
     }
 
