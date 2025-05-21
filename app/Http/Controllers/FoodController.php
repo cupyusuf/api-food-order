@@ -35,7 +35,13 @@ class FoodController extends Controller
                 'name' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'price' => 'required|numeric|min:0',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
+
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('images', 'public');
+                $validatedData['image_url'] = asset('storage/' . $imagePath);
+            }
 
             $food = Food::create($validatedData);
 
@@ -82,7 +88,13 @@ class FoodController extends Controller
                 'name' => 'sometimes|required|string|max:255',
                 'description' => 'nullable|string',
                 'price' => 'sometimes|required|numeric|min:0',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
+
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('images', 'public');
+                $validatedData['image_url'] = asset('storage/' . $imagePath);
+            }
 
             $food->update($validatedData);
 
