@@ -64,4 +64,27 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
         ]);
     }
+
+    // Update Profile API
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
+            'password' => 'sometimes|string|min:8',
+            'phone' => 'sometimes|string|max:15',
+            'address' => 'sometimes|string|max:255',
+        ]);
+
+        if ($request->has('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        $user->fill($request->only(['name', 'email', 'phone', 'address']));
+        $user->save();
+
+        return response()->json(['message' => 'Profile updated successfully', 'user' => $user]);
+    }
 }
