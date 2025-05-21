@@ -7,6 +7,7 @@ use App\Models\Food;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 use Midtrans\Snap;
 use Midtrans\Config as MidtransConfig;
 
@@ -60,10 +61,11 @@ class OrderController extends Controller
 
         $order = Order::findOrFail($orderId);
 
+        $uniqueOrderId = $order->id . '-' . time();
         $params = [
             'transaction_details' => [
-                'order_id' => $order->id,
-                'gross_amount' => $order->total_price,
+                'order_id' => $uniqueOrderId,
+                'gross_amount' => (int) $order->total_price,
             ],
             'customer_details' => [
                 'first_name' => $user->name,
@@ -73,7 +75,16 @@ class OrderController extends Controller
             ],
         ];
 
-        $snapToken = Snap::getSnapToken($params);
+        try {
+            $snapToken = Snap::getSnapToken($params);
+        } catch (\Exception $e) {
+            \Log::error('Midtrans Error: ' . $e->getMessage(), [
+                'params' => $params,
+                'user' => $user,
+                'order' => $order,
+            ]);
+            return response()->json(['error' => 'Payment processing failed.'], 500);
+        }
 
         return response()->json(['snap_token' => $snapToken]);
     }

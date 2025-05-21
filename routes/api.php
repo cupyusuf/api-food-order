@@ -12,6 +12,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('orders', [OrderController::class, 'store']);
     Route::get('orders', [OrderController::class, 'index']);
     Route::put('user/update', [AuthController::class, 'updateProfile']);
+    Route::post('orders/{order}/pay', [OrderController::class, 'pay']);
 });
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
