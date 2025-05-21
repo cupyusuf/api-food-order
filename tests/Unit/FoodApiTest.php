@@ -10,6 +10,24 @@ class FoodApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    private $user;
+    private $token;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->user = \App\Models\User::factory()->create();
+        $this->token = $this->user->createToken('auth_token')->plainTextToken;
+    }
+
+    private function withAuthHeaders(array $headers = []): array
+    {
+        return array_merge($headers, [
+            'Authorization' => 'Bearer ' . $this->token,
+        ]);
+    }
+
     public function test_can_get_all_foods()
     {
         Food::factory()->count(3)->create();
@@ -17,7 +35,7 @@ class FoodApiTest extends TestCase
         $response = $this->getJson('/api/foods');
 
         $response->assertStatus(200)
-                 ->assertJsonCount(3);
+            ->assertJsonCount(3);
     }
 
     public function test_can_create_food()
@@ -28,10 +46,11 @@ class FoodApiTest extends TestCase
             'price' => 9.99
         ];
 
-        $response = $this->postJson('/api/foods', $data);
+        $response = $this->withHeaders($this->withAuthHeaders())
+            ->postJson('/api/foods', $data);
 
         $response->assertStatus(201)
-                 ->assertJsonFragment($data);
+            ->assertJsonFragment($data);
     }
 
     public function test_can_get_single_food()
@@ -41,7 +60,7 @@ class FoodApiTest extends TestCase
         $response = $this->getJson("/api/foods/{$food->id}");
 
         $response->assertStatus(200)
-                 ->assertJsonFragment(['name' => $food->name]);
+            ->assertJsonFragment(['name' => $food->name]);
     }
 
     public function test_can_update_food()
@@ -53,17 +72,19 @@ class FoodApiTest extends TestCase
             'price' => 12.99
         ];
 
-        $response = $this->putJson("/api/foods/{$food->id}", $data);
+        $response = $this->withHeaders($this->withAuthHeaders())
+            ->putJson("/api/foods/{$food->id}", $data);
 
         $response->assertStatus(200)
-                 ->assertJsonFragment($data);
+            ->assertJsonFragment($data);
     }
 
     public function test_can_delete_food()
     {
         $food = Food::factory()->create();
 
-        $response = $this->deleteJson("/api/foods/{$food->id}");
+        $response = $this->withHeaders($this->withAuthHeaders())
+            ->deleteJson("/api/foods/{$food->id}");
 
         $response->assertStatus(204);
     }
