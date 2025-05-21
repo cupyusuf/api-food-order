@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Food;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 
 class FoodController extends Controller
 {
@@ -28,13 +30,30 @@ class FoodController extends Controller
      */
     public function store(Request $request)
     {
-        $food = Food::create($request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-        ]));
+        try {
+            $validatedData = $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'price' => 'required|numeric|min:0',
+            ]);
 
-        return response()->json($food, 201);
+            $food = Food::create($validatedData);
+
+            return response()->json([
+                'id' => $food->id,
+                'name' => $food->name,
+                'description' => $food->description,
+                'price' => $food->price,
+                'created_at' => $food->created_at,
+                'updated_at' => $food->updated_at,
+            ], Response::HTTP_CREATED);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors(),
+                'message' => 'Validation failed.',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
     }
 
     /**
@@ -58,13 +77,27 @@ class FoodController extends Controller
      */
     public function update(Request $request, Food $food)
     {
-        $food->update($request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'sometimes|required|numeric|min:0',
-        ]));
+        try {
+            $validatedData = $request->validate([
+                'name' => 'sometimes|required|string|max:255',
+                'description' => 'nullable|string',
+                'price' => 'sometimes|required|numeric|min:0',
+            ]);
 
-        return response()->json($food);
+            $food->update($validatedData);
+
+            return response()->json([
+                'success' => true,
+                'data' => $food,
+                'message' => 'Food updated successfully.',
+            ], Response::HTTP_OK);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors(),
+                'message' => 'Validation failed.',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
     }
 
     /**
@@ -72,8 +105,15 @@ class FoodController extends Controller
      */
     public function destroy(Food $food)
     {
-        $food->delete();
+        try {
+            $food->delete();
 
-        return response()->json(null, 204);
+            return response()->json(null, Response::HTTP_NO_CONTENT);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete food.',
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }
