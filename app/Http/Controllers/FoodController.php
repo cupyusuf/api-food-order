@@ -50,6 +50,7 @@ class FoodController extends Controller
                 'name' => $food->name,
                 'description' => $food->description,
                 'price' => $food->price,
+                'image_url' => $food->image_url,
                 'created_at' => $food->created_at,
                 'updated_at' => $food->updated_at,
             ], Response::HTTP_CREATED);
@@ -100,7 +101,15 @@ class FoodController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $food,
+                'data' => [
+                    'id' => $food->id,
+                    'name' => $food->name,
+                    'description' => $food->description,
+                    'price' => $food->price,
+                    'image_url' => $food->image_url,
+                    'created_at' => $food->created_at,
+                    'updated_at' => $food->updated_at,
+                ],
                 'message' => 'Food updated successfully.',
             ], Response::HTTP_OK);
         } catch (ValidationException $e) {
@@ -120,11 +129,15 @@ class FoodController extends Controller
         try {
             $food->delete();
 
-            return response()->json(null, Response::HTTP_NO_CONTENT);
+            return response()->json([
+                'success' => true,
+                'message' => 'Food deleted successfully.',
+            ], Response::HTTP_NO_CONTENT);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to delete food.',
+                'message' => 'Failed to delete food. Please try again later.',
+                'error' => $e->getMessage(),
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
