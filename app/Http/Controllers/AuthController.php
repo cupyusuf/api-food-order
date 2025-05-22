@@ -68,7 +68,7 @@ class AuthController extends Controller
     // Update Profile API
     public function updateProfile(Request $request)
     {
-        $user = Auth::user();
+        $user = User::findOrFail(Auth::id());
 
         $request->validate([
             'name' => 'sometimes|string|max:255',
@@ -82,7 +82,11 @@ class AuthController extends Controller
             $user->password = Hash::make($request->password);
         }
 
-        $user->fill($request->only(['name', 'email', 'phone', 'address']));
+        foreach (['name', 'email', 'phone', 'address'] as $field) {
+            if ($request->has($field)) {
+                $user->$field = $request->$field;
+            }
+        }
         $user->save();
 
         return response()->json(['message' => 'Profile updated successfully', 'user' => $user]);

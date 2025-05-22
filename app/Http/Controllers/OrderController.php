@@ -78,7 +78,7 @@ class OrderController extends Controller
         try {
             $snapToken = Snap::getSnapToken($params);
         } catch (\Exception $e) {
-            \Log::error('Midtrans Error: ' . $e->getMessage(), [
+            Log::error('Midtrans Error: ' . $e->getMessage(), [
                 'params' => $params,
                 'user' => $user,
                 'order' => $order,
