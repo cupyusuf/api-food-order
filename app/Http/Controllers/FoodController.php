@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class FoodController extends Controller
 {
@@ -48,10 +49,14 @@ class FoodController extends Controller
     public function store(Request $request)
     {
         try {
+            \Log::info('Incoming request data', [
+                'requestData' => $request->all(),
+            ]);
+
             $validatedData = $request->validate([
-                'name' => 'required|string|max:255',
+                'name' => 'nullable|string|max:255',
                 'description' => 'nullable|string',
-                'price' => 'required|numeric|min:0',
+                'price' => 'nullable|numeric|min:0',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
@@ -103,9 +108,9 @@ class FoodController extends Controller
     {
         try {
             $validatedData = $request->validate([
-                'name' => 'sometimes|required|string|max:255',
+                'name' => 'nullable|string|max:255',
                 'description' => 'nullable|string',
-                'price' => 'sometimes|required|numeric|min:0',
+                'price' => 'nullable|numeric|min:0',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
@@ -114,7 +119,13 @@ class FoodController extends Controller
                 $validatedData['image_url'] = asset('storage/' . $imagePath);
             }
 
-            $food->update($validatedData);
+            // Only update fields that are present in the request
+            foreach (['name', 'description', 'price', 'image_url'] as $field) {
+                if (array_key_exists($field, $validatedData)) {
+                    $food->$field = $validatedData[$field];
+                }
+            }
+            $food->save();
 
             return response()->json([
                 'success' => true,
@@ -135,6 +146,12 @@ class FoodController extends Controller
                 'errors' => $e->errors(),
                 'message' => 'Validation failed.',
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update food. Please try again later.',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 

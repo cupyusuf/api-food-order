@@ -31,9 +31,13 @@ class OrderApiTest extends TestCase
         ]);
 
         $response->assertStatus(201);
-        $this->assertCount(2, Order::all());
-        $this->assertEquals(20.00, Order::first()->total_price);
-        $this->assertEquals(20.00, Order::find(2)->total_price);
+        $orders = \App\Models\Order::all();
+        $this->assertCount(1, $orders);
+        $order = $orders->first();
+        $this->assertEquals(40.00, $order->total_price);
+        $this->assertCount(2, $order->items);
+        $this->assertEquals($food1->id, $order->items[0]->food_id);
+        $this->assertEquals($food2->id, $order->items[1]->food_id);
     }
 
     /** @test */
@@ -42,12 +46,25 @@ class OrderApiTest extends TestCase
         $user = User::factory()->create();
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        $food = Food::factory()->create(['price' => 15.00]);
-        Order::factory()->create([
+        $food1 = Food::factory()->create(['price' => 15.00]);
+        $food2 = Food::factory()->create(['price' => 5.00]);
+        $order = \App\Models\Order::create([
             'user_id' => $user->id,
-            'food_id' => $food->id,
+            'total_price' => 35.00,
+        ]);
+        \App\Models\OrderItem::create([
+            'order_id' => $order->id,
+            'food_id' => $food1->id,
             'quantity' => 2,
+            'price' => 15.00,
             'total_price' => 30.00,
+        ]);
+        \App\Models\OrderItem::create([
+            'order_id' => $order->id,
+            'food_id' => $food2->id,
+            'quantity' => 1,
+            'price' => 5.00,
+            'total_price' => 5.00,
         ]);
 
         $response = $this->withHeaders([
@@ -56,5 +73,8 @@ class OrderApiTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonCount(1);
+        $response->assertJsonFragment([
+            'total_price' => 35.00
+        ]);
     }
 }

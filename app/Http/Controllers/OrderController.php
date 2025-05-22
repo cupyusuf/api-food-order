@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Food;
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
@@ -29,25 +30,42 @@ class OrderController extends Controller
             'items.*.quantity' => 'required|integer|min:1',
         ]);
 
-        $orders = [];
+        $userId = Auth::id();
+        $grandTotal = 0;
+        $orderItems = [];
+
         foreach ($request->items as $item) {
             $food = Food::findOrFail($item['food_id']);
             $totalPrice = $food->price * $item['quantity'];
-
-            $orders[] = Order::create([
-                'user_id' => Auth::id(),
+            $grandTotal += $totalPrice;
+            $orderItems[] = [
                 'food_id' => $item['food_id'],
                 'quantity' => $item['quantity'],
+                'price' => $food->price,
                 'total_price' => $totalPrice,
-            ]);
+            ];
         }
 
-        return response()->json($orders, 201);
+        $order = Order::create([
+            'user_id' => $userId,
+            'total_price' => $grandTotal,
+        ]);
+
+        foreach ($orderItems as $item) {
+            $item['order_id'] = $order->id;
+            \App\Models\OrderItem::create($item);
+        }
+
+        return response()->json([
+            'order_id' => $order->id,
+            'total_price' => $grandTotal,
+            'items' => $orderItems
+        ], 201);
     }
 
     public function index()
     {
-        $orders = Order::where('user_id', Auth::id())->get();
+        $orders = \App\Models\Order::with('items.food')->where('user_id', Auth::id())->get();
         return response()->json($orders);
     }
 
