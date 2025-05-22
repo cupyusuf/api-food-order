@@ -36,12 +36,12 @@ class OrderController extends Controller
 
         foreach ($request->items as $item) {
             $food = Food::findOrFail($item['food_id']);
-            $totalPrice = $food->price * $item['quantity'];
+            $totalPrice = (int) $food->price * (int) $item['quantity'];
             $grandTotal += $totalPrice;
             $orderItems[] = [
                 'food_id' => $item['food_id'],
                 'quantity' => $item['quantity'],
-                'price' => $food->price,
+                'price' => (int) $food->price,
                 'total_price' => $totalPrice,
             ];
         }
@@ -69,7 +69,7 @@ class OrderController extends Controller
         return response()->json($orders);
     }
 
-    public function pay(Request $request, $orderId)
+    public function pay(Request $request, OrderItem $orderItem)
     {
         $user = Auth::user();
 
@@ -77,13 +77,27 @@ class OrderController extends Controller
             return response()->json(['error' => 'Please complete your phone and address before proceeding with payment.'], 400);
         }
 
-        $order = Order::findOrFail($orderId);
+        $order = $orderItem->order;
+        if ($order->user_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized payment attempt.'], 403);
+        }
 
-        $uniqueOrderId = $order->id . '-' . time();
+        $total = (int) $orderItem->price * (int) $orderItem->quantity;
+
+        Log::info('DEBUG PAY', [
+            'order_id' => $order->id,
+            'order_item_id' => $orderItem->id,
+            'user_id' => $user->id,
+            'price' => $orderItem->price,
+            'quantity' => $orderItem->quantity,
+            'total' => $total,
+        ]);
+
+        $uniqueOrderId = $order->id . '-' . $orderItem->id . '-' . time();
         $params = [
             'transaction_details' => [
                 'order_id' => $uniqueOrderId,
-                'gross_amount' => (int) $order->total_price,
+                'gross_amount' => $total,
             ],
             'customer_details' => [
                 'first_name' => $user->name,
@@ -100,6 +114,7 @@ class OrderController extends Controller
                 'params' => $params,
                 'user' => $user,
                 'order' => $order,
+                'order_item' => $orderItem,
             ]);
             return response()->json(['error' => 'Payment processing failed.'], 500);
         }
